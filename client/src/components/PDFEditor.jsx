@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import Draggable from 'react-draggable';
+import DraggableSignature from "./DraggableSignature";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 
@@ -28,28 +28,6 @@ const PDFEditor = ({ onPositionChange }) => {
     return () => window.removeEventListener('resize', updateWidth);
     }, []);
 
-    const onDocumentLoadSuccess = ({ numPages }) => {
-        console.log(`PDF loaded with ${numPages} pages.`);
-    };
-
-    const handleStop = (e, data) => {
-        // 3. THE MATH: Normalization Logic [cite 4, 11]
-        // We calculate position as a % of the container, not absolute pixels
-        if(!containerRef.current) return;
-
-        const { width, height } = containerRef.current.getBoundingClientRect();
-
-        const xPercent = data.x / width;
-        const yPercent = data.y / height;
-
-        // Send these % values to the parent component
-        if (onPositionChange) {
-            onPositionChange({ x: xPercent, y: yPercent});
-        }
-
-        console.log(`Normalized Position: X=${xPercent.toFixed(4)}, Y=${yPercent.toFixed(4)}`);
-    };
-
     return (
         <div
             className='pdf-wrapper'
@@ -69,34 +47,12 @@ const PDFEditor = ({ onPositionChange }) => {
                 />
             </Document>
 
-            {/* 4. DRAGGABLE LAYER: The "Ghost" Element */}
-            <Draggable
-                bounds='parent'
-                onStop={handleStop}
-                defaultPosition={{x: 0, y: 0}}
-            >
-                <div
-                    className="draggable-field"
-                    style={{ 
-                        width: '20%', 
-                        height: '10%',
-                        position: 'absolute',
-                        zIndex: 10,
-                        border: '2px dashed blue',
-                        backgroundColor: 'rgba(230, 57, 70, 0.1)',
-                        cursor: 'grab',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#e63946',
-                        fontWeight: 'bold',
-                        top: 0,
-                        left: 0
-                    }}
-                >
-                    Drag Me
-                </div>
-            </Draggable>
+            {/* INTEGRATION: Just drop the component here */}
+            {/* We pass containerRef so the child can calculate the pixels */}
+            <DraggableSignature
+                containerRef={containerRef}
+                onPositionChange={onPositionChange}
+            />
         </div>
     )
 }
