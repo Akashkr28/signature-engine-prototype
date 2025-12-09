@@ -2,46 +2,58 @@ import React, { useState, useRef, useEffect } from 'react';
 import Draggable from 'react-draggable';
 
 const DraggableSignature = ({ containerRef, onPositionChange }) => {
-  // We track pixels internally for smooth dragging
+  // 1. Track Pixels for the Drag Library
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  
+  // 2. Track Percentages for Responsive Resizing
+  // We use a Ref so we don't trigger re-renders, just storage
+  const percentsRef = useRef({ x: 0, y: 0 });
+  
   const nodeRef = useRef(null);
 
-  // Recalculate position if window resizes
+  // --- RESPONSIVE HANDLER ---
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current) {
-        // If needed, we could snap back to percentage here, 
-        // but for now, we just let it sit to avoid jumping.
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        
+        // Recalculate Pixel Position based on stored Percentages
+        // New Pixels = Old % * New Width
+        setPosition({
+          x: percentsRef.current.x * width,
+          y: percentsRef.current.y * height
+        });
       }
     };
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [containerRef]);
 
-  // 1. HANDLE DRAG (Smooth Movement)
-  // We must update state while dragging, or the box will "fight" the cursor.
+  // --- DRAG HANDLER (Smooth Movement) ---
   const handleDrag = (e, data) => {
     setPosition({ x: data.x, y: data.y });
   };
 
-  // 2. HANDLE STOP (Save Final Position)
+  // --- STOP HANDLER (Save Logic) ---
   const handleStop = (e, data) => {
     if (!containerRef.current) return;
 
     const containerRect = containerRef.current.getBoundingClientRect();
     
-    // Calculate Percentage based on the FINAL drag position (data.x / data.y)
-    // Note: data.x and data.y are the "Transform" values (pixels moved from top-left)
+    // Calculate Percentage
     let xPercent = data.x / containerRect.width;
     let yPercent = data.y / containerRect.height;
 
-    // Safety Clamp: Ensure it stays 0.0 - 1.0
+    // Safety Clamp (0.0 - 1.0)
     xPercent = Math.max(0, Math.min(xPercent, 1));
     yPercent = Math.max(0, Math.min(yPercent, 1));
 
+    // Update the Ref so resize knows where to put it
+    percentsRef.current = { x: xPercent, y: yPercent };
+
     console.log(`[Drop] X: ${(xPercent*100).toFixed(2)}%, Y: ${(yPercent*100).toFixed(2)}%`);
 
-    // Only update the Parent State when we stop dragging
     if (onPositionChange) {
       onPositionChange({ x: xPercent, y: yPercent });
     }
@@ -51,21 +63,20 @@ const DraggableSignature = ({ containerRef, onPositionChange }) => {
     <Draggable
       nodeRef={nodeRef}
       bounds="parent"
-      // We control the position directly with state
       position={position} 
-      onDrag={handleDrag} // <--- THIS LINE FIXES THE JUMPING
+      onDrag={handleDrag}
       onStop={handleStop}
     >
       <div 
         ref={nodeRef}
         className="draggable-field"
         style={{
-          width: '150px', // Fixed pixel width is safer for dragging than %
+          width: '150px',
           height: '60px',
           position: 'absolute',
-          zIndex: 10,
-          border: '2px dashed #2563eb', // Blue dashed line
-          backgroundColor: 'rgba(37, 99, 235, 0.1)', // Light blue background
+          zIndex: 50, // Increased Z-Index to ensure it floats on top
+          border: '2px dashed #2563eb',
+          backgroundColor: 'rgba(37, 99, 235, 0.1)',
           cursor: 'grab',
           display: 'flex', 
           alignItems: 'center', 
@@ -73,9 +84,9 @@ const DraggableSignature = ({ containerRef, onPositionChange }) => {
           color: '#2563eb',
           fontWeight: 'bold',
           borderRadius: '4px',
-          // Important: Start at top-left so transform (x,y) works correctly
           top: 0,
           left: 0,
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)' // Added shadow for visibility
         }}
       >
         Drag Me

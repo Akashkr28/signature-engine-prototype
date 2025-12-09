@@ -1,86 +1,96 @@
-/* 1. THE LAYOUT CONTAINER */
-.app-container {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  font-family: 'Inter', sans-serif;
+/* src/App.css */
+
+/* RESET & BASE STYLES */
+* {
+  box-sizing: border-box;
 }
 
-/* 2. THE SIDEBAR (Left Panel) */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+#root {
+  height: 100%;
+}
+
+/* --- MAIN LAYOUT (DESKTOP DEFAULT) --- */
+.app-container {
+  display: flex;
+  height: 100vh; /* Full viewport height */
+  width: 100vw;
+  overflow: hidden; /* Prevent body scroll, let panels scroll */
+  background-color: #f8f9fa;
+}
+
+/* SIDEBAR (Left Panel) */
 .sidebar {
-  width: 320px;
-  background-color: #ffffff;
-  border-right: 1px solid #e0e0e0;
+  width: 350px; /* Fixed width on desktop */
+  min-width: 300px;
+  background-color: white;
+  border-right: 1px solid #e5e7eb;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  padding: 24px;
-  box-shadow: 4px 0 24px rgba(0,0,0,0.02);
+  gap: 20px;
+  overflow-y: auto; /* Scroll if controls are too tall */
+  box-shadow: 2px 0 5px rgba(0,0,0,0.05);
   z-index: 10;
 }
 
 .sidebar h2 {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 30px;
-  color: #1a1a1a;
+  margin-top: 0;
+  font-size: 1.25rem;
+  color: #111827;
 }
 
+/* WORKSPACE (Right Panel - PDF) */
+.workspace {
+  flex: 1; /* Take remaining space */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Important for scrolling long PDFs */
+  background-color: #e5e7eb;
+  padding: 40px;
+  overflow-y: auto; /* Allow scrolling the PDF */
+  position: relative;
+}
+
+/* --- UI COMPONENTS --- */
 .control-group {
-  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .label {
-  display: block;
-  font-size: 14px;
   font-weight: 600;
-  color: #4a4a4a;
-  margin-bottom: 8px;
+  font-size: 0.875rem;
+  color: #374151;
 }
 
 .coord-box {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background: #f3f4f6;
+  padding: 10px;
   border-radius: 6px;
-  padding: 12px;
   font-family: monospace;
-  font-size: 13px;
-  color: #333;
+  font-size: 0.85rem;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
 }
 
-/* 3. THE WORKSPACE (Right Panel / Gray Background) */
-.workspace {
-  flex: 1;
-  background-color: #f0f2f5; /* Light gray desk background */
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  overflow-y: auto;
-  padding-top: 40px; /* Space from top */
-  padding-bottom: 40px;
-}
-
-/* 4. THE PDF PAPER (The actual document) */
-.pdf-wrapper {
-  box-shadow: 0 20px 40px rgba(0,0,0,0.1); /* Real paper shadow */
-  border: 1px solid #dcdcdc;
-  background: white;
-  /* Ensure it doesn't touch the edges */
-  margin-bottom: 40px; 
-}
-
-/* 5. THE SAVE BUTTON */
+/* BUTTONS */
 .primary-btn {
-  width: 100%;
-  padding: 14px;
-  background-color: #2563eb; /* Professional Blue */
+  background-color: #2563eb;
   color: white;
   border: none;
-  border-radius: 8px;
+  padding: 12px;
+  border-radius: 6px;
   font-weight: 600;
-  font-size: 16px;
   cursor: pointer;
-  transition: background 0.2s;
-  margin-top: auto; /* Pushes button to bottom if needed */
+  transition: background-color 0.2s;
 }
 
 .primary-btn:hover {
@@ -90,4 +100,38 @@
 .primary-btn:disabled {
   background-color: #9ca3af;
   cursor: not-allowed;
+}
+
+/* --- RESPONSIVE MEDIA QUERIES --- */
+
+/* TABLET & MOBILE (Screen width < 768px) */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column; /* Stack vertically */
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto; /* Allow page scroll */
+  }
+
+  .sidebar {
+    width: 100%; /* Full width */
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 15px;
+    flex-shrink: 0; /* Don't shrink */
+  }
+
+  .workspace {
+    width: 100%;
+    padding: 15px; /* Smaller padding on mobile */
+    height: auto;
+    min-height: 500px; /* Ensure PDF has space */
+  }
+  
+  /* Make buttons easier to tap */
+  .primary-btn {
+    padding: 15px; 
+    font-size: 1rem;
+  }
 }
