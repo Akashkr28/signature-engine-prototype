@@ -15,19 +15,56 @@ function App() {
     }
   };
 
-  const handleSavePdf = async() => {
-    if(!signatureFile) {
-      alert("Please upload a signature image first.");
+  const handleSavePdf = async () => {
+    if (!signatureFile) {
+      alert("Please upload a signature first!");
       return;
     }
 
-    console.log("Sending ti Backend:", {
-      coordinates: coords,
-      fileName: signatureFile.name
-    });
+    try {
+      setIsSaving(true);
+      
+      // 1. Prepare the Data
+      const formData = new FormData();
+      formData.append('signature', signatureFile); // The image file
+      
+      // The Coordinate Data (JSON string)
+      const payload = {
+        x: coords.x,
+        y: coords.y,
+        width: 0.2, // Box width (20% of page)
+        height: 0.1 // Box height (10% of page)
+      };
+      formData.append('data', JSON.stringify(payload));
 
-    // TODO: We will add the fetch() logic here in the Backend Sprint
-    alert(`Ready to sign! \nPosition: X=${(coords.x*100).toFixed(2)}%, Y=${(coords.y*100).toFixed(2)}%`);
+      // 2. Send to Backend (Port 3001)
+      const response = await fetch('http://localhost:3001/sign-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+
+      // 3. Handle the Signed PDF Download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = "signed_document.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      alert("Success! PDF Signed and Downloaded.");
+
+    } catch (error) {
+      console.error("Error signing PDF:", error);
+      alert("Failed to sign PDF. Is the Backend running on port 3001?");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
