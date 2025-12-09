@@ -1,12 +1,15 @@
 import { useRef, useState, useEffect } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import DraggableSignature from "./DraggableSignature";
-import "react-pdf/dist/esm/Page/AnnotationLayer.css";
-import "react-pdf/dist/esm/Page/TextLayer.css";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
 
 
 // 1. SETUP WORKER: This is required for react-pdf to work with Webpack/Vite
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+  ).toString();
 
 const PDFEditor = ({ onPositionChange }) => {
     const containerRef =  useRef(null);
@@ -28,14 +31,18 @@ const PDFEditor = ({ onPositionChange }) => {
     return () => window.removeEventListener('resize', updateWidth);
     }, []);
 
+    const onDocumentLoadSuccess = ({ numPages }) => {
+        console.log(`Loaded document with ${numPages} pages.`);
+    };
+
     return (
         <div
             className='pdf-wrapper'
             ref={containerRef}
-            style={{position: 'relative', width: '100%', height: '100%'}}
+            style={{position: 'relative', width: '100%', maxWidth: '800px'}}
         >
             <Document
-                file="sample.pdf"
+                file="/sample.pdf"
                 onLoadSuccess={onDocumentLoadSuccess}
                 loading={<div>Loading PDF...</div>}
             >

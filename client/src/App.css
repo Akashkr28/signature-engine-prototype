@@ -1,42 +1,93 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* 1. THE LAYOUT CONTAINER */
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  font-family: 'Inter', sans-serif;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* 2. THE SIDEBAR (Left Panel) */
+.sidebar {
+  width: 320px;
+  background-color: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.02);
+  z-index: 10;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.sidebar h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 30px;
+  color: #1a1a1a;
 }
 
-.card {
-  padding: 2em;
+.control-group {
+  margin-bottom: 24px;
 }
 
-.read-the-docs {
-  color: #888;
+.label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a4a4a;
+  margin-bottom: 8px;
+}
+
+.coord-box {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 13px;
+  color: #333;
+}
+
+/* 3. THE WORKSPACE (Right Panel / Gray Background) */
+.workspace {
+  flex: 1;
+  background-color: #f0f2f5; /* Light gray desk background */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  padding-top: 40px; /* Space from top */
+  padding-bottom: 40px;
+}
+
+/* 4. THE PDF PAPER (The actual document) */
+.pdf-wrapper {
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1); /* Real paper shadow */
+  border: 1px solid #dcdcdc;
+  background: white;
+  /* Ensure it doesn't touch the edges */
+  margin-bottom: 40px; 
+}
+
+/* 5. THE SAVE BUTTON */
+.primary-btn {
+  width: 100%;
+  padding: 14px;
+  background-color: #2563eb; /* Professional Blue */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: auto; /* Pushes button to bottom if needed */
+}
+
+.primary-btn:hover {
+  background-color: #1d4ed8;
+}
+
+.primary-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
 }
