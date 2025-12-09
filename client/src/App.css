@@ -1,33 +1,28 @@
 /* src/App.css */
 
-/* RESET & BASE STYLES */
 * {
   box-sizing: border-box;
 }
 
-body, html {
+body, html, #root {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-#root {
-  height: 100%;
-}
-
-/* --- MAIN LAYOUT (DESKTOP DEFAULT) --- */
+/* --- MAIN LAYOUT --- */
 .app-container {
   display: flex;
-  height: 100vh; /* Full viewport height */
+  height: 100vh;
   width: 100vw;
-  overflow: hidden; /* Prevent body scroll, let panels scroll */
-  background-color: #f8f9fa;
+  overflow: hidden;
+  background-color: #f3f4f6; /* Slightly darker gray for contrast */
 }
 
-/* SIDEBAR (Left Panel) */
+/* SIDEBAR */
 .sidebar {
-  width: 350px; /* Fixed width on desktop */
+  width: 350px;
   min-width: 300px;
   background-color: white;
   border-right: 1px solid #e5e7eb;
@@ -35,9 +30,9 @@ body, html {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  overflow-y: auto; /* Scroll if controls are too tall */
-  box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+  overflow-y: auto;
   z-index: 10;
+  box-shadow: 4px 0 15px rgba(0,0,0,0.05); /* Soft shadow for depth */
 }
 
 .sidebar h2 {
@@ -46,19 +41,24 @@ body, html {
   color: #111827;
 }
 
-/* WORKSPACE (Right Panel - PDF) */
+/* WORKSPACE */
 .workspace {
-  flex: 1; /* Take remaining space */
+  flex: 1;
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* Important for scrolling long PDFs */
-  background-color: #e5e7eb;
+  align-items: flex-start; /* Aligns PDF to top */
+  background-color: #e5e7eb; /* Darker gray background */
   padding: 40px;
-  overflow-y: auto; /* Allow scrolling the PDF */
-  position: relative;
+  overflow-y: auto;
 }
 
-/* --- UI COMPONENTS --- */
+/* --- CRITICAL FIX: REMOVE WHITE SPACE UNDER PDF --- */
+.react-pdf__Page__canvas {
+  display: block !important; /* Removes the 4px inline text gap */
+  margin: 0 auto;
+}
+
+/* UI ELEMENTS */
 .control-group {
   display: flex;
   flex-direction: column;
@@ -72,7 +72,7 @@ body, html {
 }
 
 .coord-box {
-  background: #f3f4f6;
+  background: #f9fafb;
   padding: 10px;
   border-radius: 6px;
   font-family: monospace;
@@ -81,7 +81,6 @@ body, html {
   border: 1px solid #d1d5db;
 }
 
-/* BUTTONS */
 .primary-btn {
   background-color: #2563eb;
   color: white;
@@ -90,48 +89,39 @@ body, html {
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .primary-btn:hover {
   background-color: #1d4ed8;
+  transform: translateY(-1px);
 }
 
 .primary-btn:disabled {
   background-color: #9ca3af;
   cursor: not-allowed;
+  transform: none;
 }
 
-/* --- RESPONSIVE MEDIA QUERIES --- */
-
-/* TABLET & MOBILE (Screen width < 768px) */
+/* RESPONSIVE */
 @media (max-width: 768px) {
   .app-container {
-    flex-direction: column; /* Stack vertically */
+    flex-direction: column;
     height: auto;
     min-height: 100vh;
-    overflow-y: auto; /* Allow page scroll */
   }
 
   .sidebar {
-    width: 100%; /* Full width */
+    width: 100%;
     height: auto;
     border-right: none;
     border-bottom: 1px solid #e5e7eb;
     padding: 15px;
-    flex-shrink: 0; /* Don't shrink */
   }
 
   .workspace {
     width: 100%;
-    padding: 15px; /* Smaller padding on mobile */
+    padding: 20px;
     height: auto;
-    min-height: 500px; /* Ensure PDF has space */
-  }
-  
-  /* Make buttons easier to tap */
-  .primary-btn {
-    padding: 15px; 
-    font-size: 1rem;
   }
 }

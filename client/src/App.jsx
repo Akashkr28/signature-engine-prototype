@@ -13,6 +13,8 @@ function App() {
   const [pdfFile, setPdfFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [resetKey, setResetKey] = useState(0); // For resetting PDFEditor if needed
+
   const handlePdfChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setPdfFile(e.target.files[0]);
@@ -29,11 +31,21 @@ function App() {
   // --- NEW: STAGE A SIGNATURE ---
   const handleAddSignature = () => {
     if (!signatureFile) { alert("Please upload a signature image first."); return; }
+    if (!pdfFile) { alert("Please upload a PDF document first."); return; }
     
     const newSig = { ...currentCoords };
     setAddedSignatures([...addedSignatures, newSig]);
     alert(`Signature added to Page ${newSig.pageNumber}! Add more or click Download.`);
   };
+
+  const handleReset = () => {
+    setPdfFile(null);
+    setSignatureFile(null);
+    setAddedSignatures([]);
+    setCurrentCoords({ x: 0, y: 0, pageNumber: 1 });
+
+    setResetKey(prev => prev + 1); // Trigger PDFEditor reset
+  }
 
   // --- NEW: FINALIZE AND DOWNLOAD ---
   const handleDownloadSignedPdf = async () => {
@@ -48,9 +60,8 @@ function App() {
       
       // 1. Append Files
       formData.append('signature', signatureFile);
-      if (pdfFile) {
-        formData.append('pdf', pdfFile);
-      }
+      formData.append('pdf', pdfFile);
+      
 
       // 2. Append The LIST of positions
       formData.append('positions', JSON.stringify(addedSignatures));
@@ -88,12 +99,21 @@ function App() {
 
         <div className="control-group">
           <label className="label">1. Upload Document</label>
-          <input type="file" accept="application/pdf" onChange={handlePdfChange} />
+          <input
+            key={`pdf-${resetKey}`} 
+            type="file" 
+            accept="application/pdf" 
+            onChange={handlePdfChange} 
+          />
         </div>
 
         <div className="control-group">
           <label className="label">2. Upload Signature</label>
-          <input type="file" accept="image/png" onChange={handleSignatureChange} />
+          <input 
+            key={`sig-${resetKey}`}
+            type="file" 
+            accept="image/png" 
+            onChange={handleSignatureChange} />
         </div>
 
         <div className="control-group">
@@ -131,6 +151,14 @@ function App() {
             disabled={isSaving || addedSignatures.length === 0}
           >
             {isSaving ? 'Processing...' : 'Download Final PDF'}
+          </button>
+
+          <button
+            className='primary-btn'
+            style={{backgroundColor: '#ef4444', color: 'white'}} // Red Button
+            onClick={handleReset}
+          >
+            Reset All
           </button>
         </div>
       </div>

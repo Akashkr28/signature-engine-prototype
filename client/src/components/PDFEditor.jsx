@@ -47,6 +47,43 @@ const PDFEditor = ({ onPositionChange, pdfFile }) => {
         });
     };
 
+    if (!pdfFile) {
+        return (
+            <div
+                className="pdf-editor-container"
+                style={{
+                    width: '100%',
+                    maxWidth: '800px',
+                    height: '500px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#f8f9fa',
+                    border: '2px dashed #ccc',
+                    borderRadius: '12px',
+                    color: '#9ca3f',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+                }}
+            >
+                <div
+                    style={{ textAlign: 'center' }}
+                >
+                    <h3
+                        style={{ 
+                            margin: '0',
+                            color: '374151'
+                        }}
+                    >No PDF File Selected</h3>
+                    <p
+                        style={{
+                            fontSize: '0.9rem',
+                        }}
+                    >Please upload a PDF to start editing.</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="pdf-editor-container" 
             style={{ 
@@ -59,13 +96,14 @@ const PDFEditor = ({ onPositionChange, pdfFile }) => {
             
             {/* --- NAVIGATION CONTROLS --- */}
             <div style={{ 
-                    background: '#333', 
+                    background: '#1f2937', 
                     color: '#fff', 
-                    padding: '10px', 
+                    padding: '12px 20px', 
                     borderRadius: '8px', 
                     display: 'flex', 
                     justifyContent: 'space-between', 
-                    alignItems: 'center' 
+                    alignItems: 'center',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                 }}>
                 <button 
                     onClick={() => changePage(-1)} 
@@ -111,15 +149,13 @@ const PDFEditor = ({ onPositionChange, pdfFile }) => {
                 style={{ 
                     position: 'relative', 
                     width: '100%', 
-                    minHeight: '400px',
-                    border: '1px solid #ccc', 
-                    background: '#f8f9fa' 
                 }}
             >
                 <Document 
-                    file={pdfFile || "/sample.pdf"} 
+                    file={pdfFile} // REMOVED "|| /sample.pdf" so it respects null
                     onLoadSuccess={onDocumentLoadSuccess}
                     loading={<div>Loading PDF...</div>}
+                    error={<div>Error loading PDF.</div>}
                 >
                     {containerWidth && (
                         <Page
@@ -127,6 +163,7 @@ const PDFEditor = ({ onPositionChange, pdfFile }) => {
                             width={containerWidth} 
                             renderTextLayer={false}
                             renderAnnotationLayer={false}
+                            canvasBackground="#ffffff"
                         />
                     )}
                 </Document>
