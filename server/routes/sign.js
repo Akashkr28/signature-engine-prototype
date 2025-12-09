@@ -14,87 +14,106 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
+
+// 1. UPDATE MULTER: Accept two files (The PDF and The Signature)
 const upload = multer({ storage: multer.memoryStorage() });
+const uploadFields = upload.fields([
+  { name: 'pdf', maxCount: 1 },        // User's document
+  { name: 'signature', maxCount: 1 }   // User's signature image
+]);
 
-router.post('/sign-pdf', upload.single('signature'), async (req, res) => {
+router.post('/sign-pdf', uploadFields, async (req, res) => {
     try {
-        console.log("--- STARTING PDF SIGNING PROCESS ---");
+        console.log("--- STARTING MULTI-SIGN PROCESS ---");
 
-        // 1. Inputs
-        let { x, y, width, height } = JSON.parse(req.body.data);
-        console.log(`INPUTS FROM FRONTEND: x=${x}, y=${y}, w=${width}, h=${height}`);
+        // 2. PARSE DATA: Expecting an ARRAY of signatures now
+        // Format: [{x, y, pageNumber}, {x, y, pageNumber}, ...]
+        const signaturePositions = JSON.parse(req.body.positions); 
+        console.log(`Received ${signaturePositions.length} signature requests.`);
 
-        // --- SAFETY CLAMP: Force values to be inside the page (0.0 to 1.0) ---
-        x = Math.max(0, Math.min(x, 1));
-        y = Math.max(0, Math.min(y, 1));
-        // --------------------------------------------------------------------
-
-        const signatureBuffer = req.file.buffer;
-
-        // 2. Load PDF
-        const pdfPath = path.join(__dirname, '../sample.pdf');
-        if (!fs.existsSync(pdfPath)) return res.status(500).json({ error: "sample.pdf missing" });
-
-        const originalPdfBytes = fs.readFileSync(pdfPath);
-        const hashBefore = crypto.createHash('sha256').update(originalPdfBytes).digest('hex');
-
-        // 3. Process PDF
-        const pdfDoc = await PDFDocument.load(originalPdfBytes);
-        const page = pdfDoc.getPages()[0];
-        const { width: pageW, height: pageH } = page.getSize();
-        
-        console.log(`PDF PAGE SIZE: width=${pageW}, height=${pageH} (Points)`);
-
-        const pngImage = await pdfDoc.embedPng(signatureBuffer);
-
-        // 4. Calculate Geometry
-        const boxW = width * pageW;
-        const boxH = height * pageH;
-        const boxX = x * pageW;
-
-        const { drawnW, drawnH, offsetX, offsetY } = calculateAspectRatioFit(
-            boxW, boxH, pngImage.width, pngImage.height
-        );
-
-        let pdfY = convertToPdfCoordinates(y, pageH, boxH);
-
-        console.log(`[DEBUG] Page Height: ${pageH}, Y-Percent: ${y}`);
-        console.log(`[DEBUG] Calculated PDF-Y: ${pdfY}`);
-        
-        // --- CRITICAL LOG: This tells us where the image is actually drawing ---
-        console.log(`DRAWING AT: x=${boxX + offsetX}, y=${pdfY + offsetY}, w=${drawnW}, h=${drawnH}`);
-
-        // SAFETY CLAMP: Ensure Y is never negative (off bottom) or too high (off top)
-        // This forces the signature to appear even if the math is slightly off.
-        if (pdfY < 0) {
-            console.log("⚠️ Y was negative! Forcing to 0.");
-            pdfY = 0; 
+        // 3. LOAD PDF (Custom or Default)
+        let pdfBuffer;
+        if (req.files.pdf && req.files.pdf[0]) {
+            console.log("Using UPLOADED PDF");
+            pdfBuffer = req.files.pdf[0].buffer;
+        } else {
+            console.log("Using DEFAULT sample.pdf");
+            const pdfPath = path.join(__dirname, '../sample.pdf');
+            if (!fs.existsSync(pdfPath)) return res.status(500).json({ error: "sample.pdf missing" });
+            pdfBuffer = fs.readFileSync(pdfPath);
         }
 
-        // 5. Draw
-        page.drawImage(pngImage, {
-            x: boxX + offsetX,
-            y: pdfY + offsetY,
-            width: drawnW,
-            height: drawnH,
-        });
+        // 4. LOAD SIGNATURE IMAGE
+        if (!req.files.signature || !req.files.signature[0]) {
+            return res.status(400).send("No signature image uploaded.");
+        }
+        const signatureBuffer = req.files.signature[0].buffer;
 
-        // 6. Save & Send
+        // Hash Original
+        const hashBefore = crypto.createHash('sha256').update(pdfBuffer).digest('hex');
+
+        // 5. PROCESS PDF
+        const pdfDoc = await PDFDocument.load(pdfBuffer);
+        const pngImage = await pdfDoc.embedPng(signatureBuffer);
+
+        // --- LOOP THROUGH ALL SIGNATURE POSITIONS ---
+        for (const pos of signaturePositions) {
+            // Default to Page 1 if missing
+            const pageIndex = (pos.pageNumber ? pos.pageNumber - 1 : 0);
+            
+            // Validate Page
+            if (pageIndex < 0 || pageIndex >= pdfDoc.getPageCount()) {
+                console.log(`Skipping invalid page index: ${pageIndex}`);
+                continue;
+            }
+
+            const page = pdfDoc.getPages()[pageIndex];
+            const { width: pageW, height: pageH } = page.getSize();
+
+            // Calculate Geometry
+            const boxW = 0.2 * pageW; // Default width 20%
+            const boxH = 0.1 * pageH; // Default height 10%
+            const boxX = pos.x * pageW;
+
+            // Aspect Ratio
+            const { drawnW, drawnH, offsetX, offsetY } = calculateAspectRatioFit(
+                boxW, boxH, pngImage.width, pngImage.height
+            );
+
+            // Coordinates (Screen Math)
+            const pdfY = convertToPdfCoordinates(pos.y, pageH, boxH);
+
+            // Safety Clamp
+            const finalY = Math.max(0, pdfY + offsetY);
+
+            // Draw
+            page.drawImage(pngImage, {
+                x: boxX + offsetX,
+                y: finalY,
+                width: drawnW,
+                height: drawnH,
+            });
+            
+            console.log(`Signed Page ${pageIndex + 1} at [${pos.x}, ${pos.y}]`);
+        }
+
+        // 6. SAVE & SEND
         const signedPdfBytes = await pdfDoc.save();
         const hashAfter = crypto.createHash('sha256').update(signedPdfBytes).digest('hex');
 
-        // DB Save
+        // Save Audit Log
         try {
             await AuditLog.create({
-                documentId: "sample.pdf", action: "SIGNATURE_INJECTED",
-                originalHash: hashBefore, finalHash: hashAfter
+                documentId: req.files.pdf ? req.files.pdf[0].originalname : "sample.pdf",
+                action: "MULTI_SIGNATURE_INJECTED",
+                originalHash: hashBefore,
+                finalHash: hashAfter
             });
             console.log("✅ Audit Log saved");
         } catch (e) { console.error("DB Error:", e.message); }
 
         res.setHeader('Content-Type', 'application/pdf');
         res.send(Buffer.from(signedPdfBytes));
-        console.log("--- DONE ---");
 
     } catch (err) {
         console.error("FATAL ERROR:", err);

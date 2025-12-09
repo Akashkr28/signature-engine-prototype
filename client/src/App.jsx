@@ -1,53 +1,69 @@
-import { useState } from 'react'
+import { useState } from 'react';
 import PDFEditor from './components/PDFEditor';
-import './App.css'
+import './App.css';
 
 function App() {
-  // 1. STATE: Store thr coordinates and uplaoded signature file
-  const [coords, setCoords] = useState({ x: 0, y: 0 });
+  // Store the current drag position
+  const [currentCoords, setCurrentCoords] = useState({ x: 0, y: 0, pageNumber: 1 });
+  
+  // Store the LIST of added signatures
+  const [addedSignatures, setAddedSignatures] = useState([]);
+  
   const [signatureFile, setSignatureFile] = useState(null);
+  const [pdfFile, setPdfFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 2. HANDLER: Capture thr user's uploaded signature image
-  const handleFileChange = (e) => {
-    if(e.target.files && e.target.files[0]) {
+  const handlePdfChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setPdfFile(e.target.files[0]);
+      setAddedSignatures([]); // Reset signatures on new file
+    }
+  };
+
+  const handleSignatureChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
       setSignatureFile(e.target.files[0]);
     }
   };
 
-  const handleSavePdf = async () => {
-    if (!signatureFile) {
-      alert("Please upload a signature first!");
+  // --- NEW: STAGE A SIGNATURE ---
+  const handleAddSignature = () => {
+    if (!signatureFile) { alert("Please upload a signature image first."); return; }
+    
+    const newSig = { ...currentCoords };
+    setAddedSignatures([...addedSignatures, newSig]);
+    alert(`Signature added to Page ${newSig.pageNumber}! Add more or click Download.`);
+  };
+
+  // --- NEW: FINALIZE AND DOWNLOAD ---
+  const handleDownloadSignedPdf = async () => {
+    if (addedSignatures.length === 0) {
+      alert("Please add at least one signature before downloading.");
       return;
     }
 
     try {
       setIsSaving(true);
-      
-      // 1. Prepare the Data
       const formData = new FormData();
-      formData.append('signature', signatureFile); // The image file
       
-      // The Coordinate Data (JSON string)
-      const payload = {
-        x: coords.x,
-        y: coords.y,
-        width: 0.2, // Box width (20% of page)
-        height: 0.1 // Box height (10% of page)
-      };
-      formData.append('data', JSON.stringify(payload));
+      // 1. Append Files
+      formData.append('signature', signatureFile);
+      if (pdfFile) {
+        formData.append('pdf', pdfFile);
+      }
 
-      // 2. Send to Backend (Port 3001)
+      // 2. Append The LIST of positions
+      formData.append('positions', JSON.stringify(addedSignatures));
+
+      // 3. Send Request
       const response = await fetch('http://localhost:3001/sign-pdf', {
         method: 'POST',
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
-      }
+      if (!response.ok) throw new Error("Server Error");
 
-      // 3. Handle the Signed PDF Download
+      // 4. Download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -57,50 +73,76 @@ function App() {
       link.click();
       link.remove();
       
-      alert("Success! PDF Signed and Downloaded.");
-
     } catch (error) {
-      console.error("Error signing PDF:", error);
-      alert("Failed to sign PDF. Is the Backend running on port 3001?");
+      console.error("Error:", error);
+      alert("Failed to sign PDF.");
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-<div className="app-container">
-      {/* LEFT SIDEBAR */}
+    <div className="app-container">
       <div className="sidebar">
         <h2>Signature Tool</h2>
 
         <div className="control-group">
-          <label className="label">1. Upload Signature</label>
-          <input type="file" onChange={handleFileChange} />
+          <label className="label">1. Upload Document</label>
+          <input type="file" accept="application/pdf" onChange={handlePdfChange} />
         </div>
 
         <div className="control-group">
-          <label className="label">2. Position Tracker</label>
-          <div className="coord-box">
-            <div>X: {(coords.x * 100).toFixed(2)}%</div>
-            <div>Y: {(coords.y * 100).toFixed(2)}%</div>
-          </div>
+          <label className="label">2. Upload Signature</label>
+          <input type="file" accept="image/png" onChange={handleSignatureChange} />
         </div>
 
-        <button 
-          className="primary-btn"
-          onClick={handleSavePdf}
-          disabled={!signatureFile || isSaving}
-        >
-          {isSaving ? 'Processing...' : 'Sign Document'}
-        </button>
+        <div className="control-group">
+          <label className="label">3. Current Position</label>
+          <div className="coord-box">
+            <div>Page: {currentCoords.pageNumber}</div>
+            <div>X: {(currentCoords.x * 100).toFixed(2)}%</div>
+            <div>Y: {(currentCoords.y * 100).toFixed(2)}%</div>
+          </div>
+        </div>
+        
+        {/* LIST OF ADDED SIGNATURES */}
+        <div className="control-group">
+           <label className="label">Staged Signatures: {addedSignatures.length}</label>
+           <ul style={{fontSize: '12px', paddingLeft: '20px', color: '#666'}}>
+             {addedSignatures.map((sig, idx) => (
+               <li key={idx}>Page {sig.pageNumber} (Ready)</li>
+             ))}
+           </ul>
+        </div>
+
+        {/* BUTTONS */}
+        <div style={{display: 'flex', flexDirection: 'column', gap: '10px', marginTop: 'auto'}}>
+          <button 
+            className="primary-btn"
+            style={{backgroundColor: '#eab308', color: 'black'}} // Yellow Button
+            onClick={handleAddSignature}
+          >
+            + Add Signature Here
+          </button>
+
+          <button 
+            className="primary-btn"
+            onClick={handleDownloadSignedPdf}
+            disabled={isSaving || addedSignatures.length === 0}
+          >
+            {isSaving ? 'Processing...' : 'Download Final PDF'}
+          </button>
+        </div>
       </div>
 
-      {/* RIGHT WORKSPACE */}
       <div className="workspace">
-        <PDFEditor onPositionChange={setCoords} />
+        <PDFEditor 
+            onPositionChange={setCurrentCoords} 
+            pdfFile={pdfFile} 
+        />
       </div>
     </div>
   );
 }
 
-export default App
+export default App;
