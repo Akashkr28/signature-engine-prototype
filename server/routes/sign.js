@@ -22,7 +22,7 @@ const uploadFields = upload.fields([
   { name: 'signature', maxCount: 1 }   // User's signature image
 ]);
 
-router.post('/sign-pdf', uploadFields, async (req, res) => {
+router.post('/sign-pdf', upload.fields([{ name: 'pdf' }, { name: 'signature' }]), async (req, res) => {
     try {
         console.log("--- STARTING MULTI-SIGN PROCESS ---");
 
