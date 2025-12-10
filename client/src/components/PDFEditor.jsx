@@ -146,8 +146,8 @@ const PDFEditor = ({ onPositionChange, pdfFile, addedSignatures, signatureUrl })
                                 objectFit: 'contain',
                                 zIndex: 20, // Sit on top of PDF
                                 pointerEvents: 'none', // Allow clicking through if needed
-                                border: '2px solid #2563eb', // Make it look "Active"
-                                backgroundColor: 'rgba(255, 255, 255, 0.5)'
+                                border: 'none', // Make it look "Active"
+                                backgroundColor: 'transparent'
                             }}
                         />
                     );
