@@ -1,24 +1,24 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react'; // Added useMemo
 import PDFEditor from './components/PDFEditor';
 import './App.css';
 
 function App() {
-  // Store the current drag position
   const [currentCoords, setCurrentCoords] = useState({ x: 0, y: 0, pageNumber: 1 });
-  
-  // Store the LIST of added signatures
   const [addedSignatures, setAddedSignatures] = useState([]);
-  
   const [signatureFile, setSignatureFile] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
 
-  const [resetKey, setResetKey] = useState(0); // For resetting PDFEditor if needed
+  // --- NEW: Create a Preview URL for the signature image ---
+  const signatureUrl = useMemo(() => {
+    return signatureFile ? URL.createObjectURL(signatureFile) : null;
+  }, [signatureFile]);
 
   const handlePdfChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setPdfFile(e.target.files[0]);
-      setAddedSignatures([]); // Reset signatures on new file
+      setAddedSignatures([]); 
     }
   };
 
@@ -28,14 +28,12 @@ function App() {
     }
   };
 
-  // --- NEW: STAGE A SIGNATURE ---
   const handleAddSignature = () => {
     if (!signatureFile) { alert("Please upload a signature image first."); return; }
-    if (!pdfFile) { alert("Please upload a PDF document first."); return; }
+    if (!pdfFile) { alert("Please upload a PDF first."); return; }
     
     const newSig = { ...currentCoords };
     setAddedSignatures([...addedSignatures, newSig]);
-    alert(`Signature added to Page ${newSig.pageNumber}! Add more or click Download.`);
   };
 
   const handleReset = () => {
@@ -43,38 +41,32 @@ function App() {
     setSignatureFile(null);
     setAddedSignatures([]);
     setCurrentCoords({ x: 0, y: 0, pageNumber: 1 });
+    setResetKey(prev => prev + 1);
+  };
 
-    setResetKey(prev => prev + 1); // Trigger PDFEditor reset
-  }
-
-  // --- NEW: FINALIZE AND DOWNLOAD ---
   const handleDownloadSignedPdf = async () => {
     if (addedSignatures.length === 0) {
-      alert("Please add at least one signature before downloading.");
+      alert("Please add at least one signature.");
       return;
     }
 
     try {
       setIsSaving(true);
       const formData = new FormData();
-      
-      // 1. Append Files
       formData.append('signature', signatureFile);
       formData.append('pdf', pdfFile);
-      
-
-      // 2. Append The LIST of positions
       formData.append('positions', JSON.stringify(addedSignatures));
 
-      // 3. Send Request
-      const response = await fetch('http://localhost:3001/sign-pdf', {
+      // Ensure this URL matches your backend environment
+      const API_URL = 'http://localhost:3001'; 
+      
+      const response = await fetch(`${API_URL}/sign-pdf`, {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) throw new Error("Server Error");
 
-      // 4. Download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -95,25 +87,37 @@ function App() {
   return (
     <div className="app-container">
       <div className="sidebar">
-        <h2>Signature Tool</h2>
+        
+        {/* LOGO COMPONENT */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            background: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '20px',
+            boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.5)'
+          }}>
+            ✍️
+          </div>
+          <h2 style={{ margin: 0, fontSize: '1.5rem', background: '-webkit-linear-gradient(#111827, #4b5563)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            SignStream
+          </h2>
+        </div>
 
         <div className="control-group">
           <label className="label">1. Upload Document</label>
-          <input
-            key={`pdf-${resetKey}`} 
-            type="file" 
-            accept="application/pdf" 
-            onChange={handlePdfChange} 
-          />
+          <input key={`pdf-${resetKey}`} type="file" accept="application/pdf" onChange={handlePdfChange} />
         </div>
 
         <div className="control-group">
           <label className="label">2. Upload Signature</label>
-          <input 
-            key={`sig-${resetKey}`}
-            type="file" 
-            accept="image/png" 
-            onChange={handleSignatureChange} />
+          <input key={`sig-${resetKey}`} type="file" accept="image/png" onChange={handleSignatureChange} />
         </div>
 
         <div className="control-group">
@@ -125,22 +129,21 @@ function App() {
           </div>
         </div>
         
-        {/* LIST OF ADDED SIGNATURES */}
         <div className="control-group">
            <label className="label">Staged Signatures: {addedSignatures.length}</label>
-           <ul style={{fontSize: '12px', paddingLeft: '20px', color: '#666'}}>
+           <ul style={{fontSize: '12px', paddingLeft: '20px', color: '#666', maxHeight: '100px', overflowY: 'auto'}}>
              {addedSignatures.map((sig, idx) => (
                <li key={idx}>Page {sig.pageNumber} (Ready)</li>
              ))}
            </ul>
         </div>
 
-        {/* BUTTONS */}
         <div style={{display: 'flex', flexDirection: 'column', gap: '10px', marginTop: 'auto'}}>
           <button 
             className="primary-btn"
-            style={{backgroundColor: '#eab308', color: 'black'}} // Yellow Button
+            style={{backgroundColor: '#eab308', color: 'black'}}
             onClick={handleAddSignature}
+            disabled={!pdfFile || !signatureFile}
           >
             + Add Signature Here
           </button>
@@ -153,9 +156,9 @@ function App() {
             {isSaving ? 'Processing...' : 'Download Final PDF'}
           </button>
 
-          <button
-            className='primary-btn'
-            style={{backgroundColor: '#ef4444', color: 'white'}} // Red Button
+          <button 
+            className="primary-btn"
+            style={{backgroundColor: '#ef4444', marginTop: '10px'}} 
             onClick={handleReset}
           >
             Reset All
@@ -166,7 +169,10 @@ function App() {
       <div className="workspace">
         <PDFEditor 
             onPositionChange={setCurrentCoords} 
-            pdfFile={pdfFile} 
+            pdfFile={pdfFile}
+            // --- NEW PROPS ---
+            addedSignatures={addedSignatures} 
+            signatureUrl={signatureUrl}
         />
       </div>
     </div>
