@@ -13,7 +13,7 @@ function App() {
   // --- NEW: Create a Preview URL for the signature image ---
   const signatureUrl = useMemo(() => {
     return signatureFile ? URL.createObjectURL(signatureFile) : null;
-  }, [signatureFile]); 
+  }, [signatureFile]);
 
   const handlePdfChange = (e) => {
     if (e.target.files && e.target.files[0]) {
