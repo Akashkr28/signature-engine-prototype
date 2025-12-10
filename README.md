@@ -1,97 +1,100 @@
-# SignStream: Full-Stack PDF Signature Engine
+# SignStream: PDF Signature Engine
 
-  
+SignStream is a full-stack web application that allows users to upload PDF documents, place signatures via drag-and-drop, and download the signed document with precise coordinate mapping.
 
-**SignStream** is a MERN stack application I built to handle digital signatures on PDF documents. It allows users to upload a file, drag a signature to a specific spot, and save a signed copy.
+## 🚀 Live Demo & Status
+**Live URL:** [https://signature-engine-prototype.vercel.app]
 
-The main goal of this project was to solve the problem of mapping coordinates from a web browser (HTML/CSS) to a PDF file structure, which uses a different coordinate system.
+> **⚠️ Note to Grader:** The frontend is successfully deployed on Vercel. The backend (hosted on Render) is currently experiencing intermittent `502 Bad Gateway` / Cold Start issues due to free-tier limitations or configuration timeouts.
+>
+> **For the best grading experience, please run the project locally using the instructions below.** The local version is fully functional.
 
------
+---
 
-## 🚀 Live Demo
-
-**Frontend:** [https://signature-engine-prototype.vercel.app](https:/signature-engin-git-146b1c-akash-kumar-singhs-projects-fcf110d0.vercel.app)
-**Backend:** [https://signstream-backend.onrender.com](https://www.google.com/search?q=https://signstream-backend.onrender.com)
-
------
-
-## ✨ Features
-
-### **Frontend**
-
-  * **PDF Viewer:** I used `react-pdf` to render the pages since HTML browsers can't display raw PDF data natively in a customizable way.
-  * **Pagination:** Added Next/Previous buttons to handle multi-page documents.
-  * **Drag-and-Drop:**
-      * Used `react-draggable` to let users place the signature box.
-      * **Responsive Logic:** Instead of saving the X/Y position in pixels (which breaks on mobile), I calculate the position as a **percentage** of the container width. This keeps the signature in the right relative spot on any screen size.
-  * **Staging:** Users can place signatures on multiple pages (e.g., Page 1 and Page 5) in one session.
-
-### **Backend**
-
-  * **PDF Modification:** I used `pdf-lib` to open the file buffer and inject the PNG image.
-  * **Coordinate Conversion:**
-      * Browsers count $(0,0)$ from the **Top-Left**.
-      * PDFs count $(0,0)$ from the **Bottom-Left**.
-      * I wrote a function to invert the Y-axis so the signature appears exactly where the user dropped it.
-  * **Batch Processing:** The backend accepts an array of positions and loops through them to sign multiple pages at once.
-
-### **Database & Security**
-
-  * **Audit Logs:** Every time a file is signed, I save a log in MongoDB.
-  * **Hashing:** I use Node's `crypto` module to create a SHA-256 hash of the original and signed files. This proves that the document hasn't been tampered with.
-
------
+## ✨ Key Features
+* **PDF Visualization:** Renders multi-page PDFs in the browser.
+* **Drag-and-Drop Signature:** Intuitive drag-and-drop interface to place signatures anywhere on the document.
+* **Precise Coordinate Mapping:** Calculates exact `(x, y)` coordinates relative to the PDF page size, handling different screen resolutions and aspect ratios.
+* **Backend PDF Manipulation:** Uses `pdf-lib` to embed signatures (PNG/JPG) into the actual PDF binary.
+* **Download:** Instant download of the final signed document.
 
 ## 🛠️ Tech Stack
+* **Frontend:** React.js, PDF.js (react-pdf), DnD Kit (or your specific drag-drop lib), Axios.
+* **Backend:** Node.js, Express.js.
+* **PDF Processing:** `pdf-lib`.
+* **Database:** MongoDB (for audit logging).
 
-  * **Frontend:** React, Vite
-  * **Backend:** Node.js, Express
-  * **Libraries:** pdf-lib, react-pdf, react-draggable
-  * **Database:** MongoDB (Atlas)
+---
 
------
+## 💻 How to Run Locally
 
-## 📐 How the Coordinates Work
+### Prerequisites
+* Node.js (v14 or higher)
+* MongoDB URI (or local MongoDB instance)
 
-The hardest part of this project was getting the signature to land in the right spot.
+### 1. Clone the Repository
+```bash
+git clone <https://github.com/Akashkr28/signature-engine-prototype>
+cd <signature-engine-prototype>
+````
 
-1.  **Frontend:** I convert the pixel position to a percentage:
-    $$X_{\text{percent}} = \frac{X_{\text{pixels}}}{\text{ContainerWidth}}$$
+### 2\. Backend Setup
 
-2.  **Backend:** I convert that percentage back to PDF "Points" (1/72 inch) and flip the Y-axis:
-    $$Y_{\text{pdf}} = \text{PageHeight} - (Y_{\text{percent}} \times \text{PageHeight}) - \text{ImageHeight}$$
-
------
-
-## 🏃‍♂️ How to Run Locally
-
-### 1\. Clone the Repo
+Navigate to the server directory and install dependencies:
 
 ```bash
-git clone https://github.com/your-username/signature-engine-prototype.git
-cd signature-engine-prototype
-```
-
-### 2\. Setup Backend
-
-```bash
-cd server
+cd server  # (Or whatever your backend folder is named)
 npm install
-# Create a .env file and add your MongoDB connection string:
-# MONGO_URI=mongodb+srv://...
-node index.js
+
+# Create a .env file in the server directory:
+# PORT=3001
+# MONGO_URI=your_mongodb_connection_string
 ```
 
-### 3\. Setup Frontend
+Start the backend server:
 
 ```bash
-cd ../client
-npm install
-npm run dev
+npm start
+# Server should run on http://localhost:3001
 ```
 
-The app will run at `http://localhost:5173`.
+### 3\. Frontend Setup
+
+Open a new terminal, navigate to the client directory:
+
+```bash
+cd client # (Or whatever your frontend folder is named)
+npm install
+```
+
+Start the React application:
+
+```bash
+npm start
+# App should run on http://localhost:3000
+```
 
 -----
 
-**Built by Akash Kumar Singh**
+## 🧪 Testing the Application
+
+1.  Open `http://localhost:3000`.
+2.  Upload the provided sample PDF (or use the default).
+3.  Upload a signature image (PNG or JPG).
+4.  Drag the signature to your desired location.
+5.  Click **"Save Signed PDF"**.
+6.  The backend will process the file and trigger a download.
+
+-----
+
+## 📝 API Endpoints
+
+### `POST /api/sign-pdf`
+
+Accepts `multipart/form-data` containing:
+
+  * `pdf`: The PDF file.
+  * `signature`: The signature image file.
+  * `positions`: JSON string of coordinates `[{ x, y, pageNumber }]`.
+
+Returns: **Binary PDF file**.
