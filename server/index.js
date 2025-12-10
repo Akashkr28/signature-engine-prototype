@@ -25,7 +25,7 @@ app.get('/', (req, res) => {
   res.send("SignStream Backend is Running!");
 });
 
-app.use('/', signRoute);
+app.use('/api', signRoute);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

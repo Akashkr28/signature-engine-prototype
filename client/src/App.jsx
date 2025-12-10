@@ -60,7 +60,7 @@ function App() {
       // Ensure this URL matches your backend environment
       const API_URL = 'https://signstream-backend.onrender.com'; 
       
-      const response = await fetch(`${API_URL}/sign-pdf`, {
+      const response = await fetch(`${API_URL}/api/sign-pdf`, {
         method: 'POST',
         body: formData,
       });
