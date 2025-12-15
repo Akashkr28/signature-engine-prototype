@@ -94,15 +94,15 @@ const PDFEditor = ({ onPositionChange, pdfFile, addedSignatures, signatureUrl })
                     loading={<div style={{padding: '40px', textAlign: 'center', color: '#fff'}}>Loading PDF...</div>}
                     error={<div style={{padding: '40px', textAlign: 'center', color: '#ef4444'}}>Failed to load PDF.</div>}
                 >
-                    {containerWidth && (
-                        <Page
-                            pageNumber={pageNumber}
-                            width={containerWidth} 
-                            renderTextLayer={false}
-                            renderAnnotationLayer={false}
-                            canvasBackground="#ffffff" 
-                        />
-                    )}
+                    {/* REMOVED the "containerWidth &&" check */}
+                    {/* ADDED a fallback "|| 600" so it renders immediately */}
+                    <Page
+                        pageNumber={pageNumber}
+                        width={containerWidth || 600} 
+                        renderTextLayer={false}
+                        renderAnnotationLayer={false}
+                        canvasBackground="#ffffff" 
+                    />
                 </Document>
 
                 {/* --- 1. RENDER PLACED SIGNATURES --- */}
