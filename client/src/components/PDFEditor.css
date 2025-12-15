@@ -1,0 +1,109 @@
+
+/* --- Main Container --- */
+.pdf-editor-container {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 0 auto; /* Center in the workspace */
+  }
+  
+  /* --- Navigation Bar --- */
+  .pdf-nav {
+    background-color: #1f2937; /* Dark Gray */
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 10; /* Ensure it stays above PDF content if scrolled */
+  }
+  
+  .pdf-nav span {
+    font-weight: 600;
+    font-feature-settings: "tnum"; /* Tabular numbers preventing jitter */
+    letter-spacing: 0.5px;
+  }
+  
+  .nav-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .nav-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+  
+  .nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  /* --- PDF Wrapper --- */
+  /* This is crucial for coordinate mapping */
+  .pdf-wrapper {
+    position: relative; 
+    width: 100%;
+    border-radius: 8px;
+    /* Shadow for the paper look */
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  /* Target the Canvas react-pdf generates to ensure it fits */
+  .pdf-wrapper canvas {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+    border-radius: 8px; 
+  }
+  
+  /* --- Placed Signatures (The "Stickers") --- */
+  .placed-signature {
+    position: absolute;
+    object-fit: contain;
+    z-index: 20;
+    pointer-events: none; /* Allows user to drag the "active" tool over placed ones */
+    transition: opacity 0.2s;
+  }
+  
+  /* --- Empty State --- */
+  .empty-state {
+    width: 100%;
+    max-width: 800px;
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    border: 2px dashed #e5e7eb;
+    border-radius: 12px;
+    color: #9ca3af;
+    margin: 0 auto;
+  }
+  
+  .empty-state-icon {
+    font-size: 3.5rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+  
+  .empty-state h3 {
+    margin: 0 0 8px 0;
+    color: #374151;
+    font-size: 1.25rem;
+  }
