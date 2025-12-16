@@ -5,134 +5,109 @@ import './PDFEditor.css';
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-// Worker Setup
-// pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-//   'pdfjs-dist/build/pdf.worker.min.mjs',
-//   import.meta.url,
-// ).toString();
-
+// Force CDN Worker to fix "Gray Screen"
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-const PDFEditor = ({ onPositionChange, pdfFile, addedSignatures, signatureUrl }) => {
+const PDFEditor = ({ 
+    onPositionChange, 
+    pdfFile, 
+    addedSignatures, 
+    signatureUrl, 
+    activePage,       // <--- Using Prop from App.jsx
+    setActivePage     // <--- Using Prop from App.jsx
+}) => {
     const containerRef = useRef(null);
     const [containerWidth, setContainerWidth] = useState(null);
     const [numPages, setNumPages] = useState(null);
-    const [pageNumber, setPageNumber] = useState(1);
 
-    // Resize observer to handle window resizing dynamically
+    // Track container width for responsive PDF
     useEffect(() => {
         const updateWidth = () => {
             if (containerRef.current) {
                 setContainerWidth(containerRef.current.offsetWidth); 
             }
         };
-
-        // Use ResizeObserver for more robust width tracking than window 'resize'
         const observer = new ResizeObserver(updateWidth);
         if (containerRef.current) observer.observe(containerRef.current);
-        
-        // Initial call
         updateWidth();
-
         return () => observer.disconnect();
     }, []);
 
     const onDocumentLoadSuccess = ({ numPages }) => {
         setNumPages(numPages);
-        setPageNumber(1);
     };
 
     const changePage = (offset) => {
-        setPageNumber(prevPage => {
-            const newPage = prevPage + offset;
-            return Math.max(1, Math.min(newPage, numPages || 1));
-        });
+        setActivePage(prev => Math.max(1, Math.min(prev + offset, numPages || 1)));
     };
 
-    // --- EMPTY STATE ---
-    if (!pdfFile) {
-        return (
-            <div className="empty-state">
-                <div className="empty-state-icon">📄</div>
-                <h3>No PDF Uploaded</h3>
-                <p>Upload a document from the sidebar to begin.</p>
-            </div>
-        );
-    }
+    if (!pdfFile) return <div className="empty-state"><h3>Please Upload a PDF</h3></div>;
 
     return (
         <div className="pdf-editor-container">
-            
-            {/* Navigation Bar */}
+            {/* Nav Bar */}
             <div className="pdf-nav">
-                <button 
-                    className="nav-btn"
-                    onClick={() => changePage(-1)} 
-                    disabled={pageNumber <= 1}
-                >
-                    ◀ Previous
-                </button>
-                
-                <span>
-                    Page {pageNumber} of {numPages || '--'}
-                </span>
-                
-                <button 
-                    className="nav-btn"
-                    onClick={() => changePage(1)} 
-                    disabled={pageNumber >= numPages}
-                >
-                    Next ▶
-                </button>
+                <button className="nav-btn" onClick={() => changePage(-1)} disabled={activePage <= 1}>◀ Prev</button>
+                <span>Page {activePage} of {numPages || '--'}</span>
+                <button className="nav-btn" onClick={() => changePage(1)} disabled={activePage >= numPages}>Next ▶</button>
             </div>
 
-            {/* PDF Viewer Wrapper */}
-            <div className='pdf-wrapper' ref={containerRef}>
+            {/* --- CRITICAL FIX START --- */}
+            {/* We add INLINE styles here to guarantee the coordinate system works */}
+            <div 
+                ref={containerRef}
+                className='pdf-wrapper' 
+                style={{ 
+                    position: 'relative',   /* Coordinates (0,0) start here */
+                    display: 'inline-block',/* Wraps tight around PDF */
+                    minWidth: '100%',
+                    minHeight: '500px'      /* Prevents 0-height collapse */
+                }}
+            >
                 <Document 
                     file={pdfFile} 
                     onLoadSuccess={onDocumentLoadSuccess}
-                    loading={<div style={{padding: '40px', textAlign: 'center', color: '#fff'}}>Loading PDF...</div>}
-                    error={<div style={{padding: '40px', textAlign: 'center', color: '#ef4444'}}>Failed to load PDF.</div>}
                 >
-                    {/* REMOVED the "containerWidth &&" check */}
-                    {/* ADDED a fallback "|| 600" so it renders immediately */}
                     <Page
-                        pageNumber={pageNumber}
+                        pageNumber={activePage}
                         width={containerWidth || 600} 
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
-                        canvasBackground="#ffffff" 
                     />
                 </Document>
 
-                {/* --- 1. RENDER PLACED SIGNATURES --- */}
+                {/* 1. Show Placed Signatures */}
                 {addedSignatures && signatureUrl && addedSignatures.map((sig, index) => {
-                    if (sig.pageNumber !== pageNumber) return null;
-
+                    if (sig.pageNumber !== activePage) return null;
                     return (
                         <img
                             key={index}
                             src={signatureUrl}
-                            alt="Signature"
                             className="placed-signature"
                             style={{
+                                position: 'absolute',
                                 top: `${sig.y * 100}%`,
                                 left: `${sig.x * 100}%`,
-                                width: '150px', 
-                                height: '60px', 
+                                width: '150px',
+                                height: '60px',
+                                zIndex: 50,
+                                pointerEvents: 'none'
                             }}
                         />
                     );
                 })}
 
-                {/* --- 2. THE DRAGGABLE TOOL --- */}
+                {/* 2. The Draggable Tool */}
+                {/* We pass activePage so the parent App knows which page the coordinate belongs to */}
                 <DraggableSignature 
                     containerRef={containerRef} 
                     onPositionChange={(pos) => {
-                        if(onPositionChange) onPositionChange({ ...pos, pageNumber });
+                        // Pass x, y AND the current activePage up to App.jsx
+                        onPositionChange({ ...pos, pageNumber: activePage });
                     }} 
                 />
             </div>
+            {/* --- CRITICAL FIX END --- */}
         </div>
     );
 };

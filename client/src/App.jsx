@@ -3,12 +3,13 @@ import PDFEditor from './components/PDFEditor';
 import './App.css';
 
 function App() {
-  const [currentCoords, setCurrentCoords] = useState({ x: 0, y: 0, pageNumber: 1 });
+  const [currentCoords, setCurrentCoords] = useState({ x: 0, y: 0});
   const [addedSignatures, setAddedSignatures] = useState([]);
   const [signatureFile, setSignatureFile] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  const [activePage, setActivePage] = useState(1);
 
   // --- NEW: Create a Preview URL for the signature image ---
   const signatureUrl = useMemo(() => {
@@ -32,7 +33,11 @@ function App() {
     if (!signatureFile) { alert("Please upload a signature image first."); return; }
     if (!pdfFile) { alert("Please upload a PDF first."); return; }
     
-    const newSig = { ...currentCoords };
+    const newSig = { 
+      x: currentCoords.x, 
+      y: currentCoords.y, 
+      pageNumber: activePage 
+  };
     setAddedSignatures([...addedSignatures, newSig]);
   };
 
@@ -40,8 +45,9 @@ function App() {
     setPdfFile(null);
     setSignatureFile(null);
     setAddedSignatures([]);
-    setCurrentCoords({ x: 0, y: 0, pageNumber: 1 });
+    setCurrentCoords({ x: 0, y: 0});
     setResetKey(prev => prev + 1);
+    setActivePage(1);
   };
 
   const handleDownloadSignedPdf = async () => {
@@ -123,7 +129,7 @@ function App() {
         <div className="control-group">
           <label className="label">3. Current Position</label>
           <div className="coord-box">
-            <div>Page: {currentCoords.pageNumber}</div>
+          <div>Page: {activePage}</div> {/* Use activePage */}
             <div>X: {(currentCoords.x * 100).toFixed(2)}%</div>
             <div>Y: {(currentCoords.y * 100).toFixed(2)}%</div>
           </div>
@@ -173,6 +179,8 @@ function App() {
             // --- NEW PROPS ---
             addedSignatures={addedSignatures} 
             signatureUrl={signatureUrl}
+            activePage={activePage}
+            setActivePage={setActivePage}
         />
       </div>
     </div>

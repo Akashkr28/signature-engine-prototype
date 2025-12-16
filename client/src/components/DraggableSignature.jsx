@@ -1,85 +1,79 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Draggable from 'react-draggable';
-import './DraggableSignature.css'; // Import the new styles
+// import './DraggableSignature.css'; // Optional if you use inline styles below
 
 const DraggableSignature = ({ containerRef, onPositionChange }) => {
-  // 1. Track Pixels for the Drag Library
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  
-  // 2. Track Percentages for Responsive Resizing
-  // Default to center if no position set yet (optional, or 0,0)
   const percentsRef = useRef({ x: 0, y: 0 });
-  
   const nodeRef = useRef(null);
 
-  // --- RESPONSIVE HANDLER (ResizeObserver) ---
+  // Maintain position during resize
   useEffect(() => {
     if (!containerRef.current) return;
-
     const updatePosition = () => {
-      if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
-        
-        // Recalculate Pixel Position based on stored Percentages
-        // This keeps the box relative to the PDF size, not the screen pixels
-        setPosition({
-          x: percentsRef.current.x * width,
-          y: percentsRef.current.y * height
-        });
-      }
+        if(width && height) {
+            setPosition({
+                x: percentsRef.current.x * width,
+                y: percentsRef.current.y * height
+            });
+        }
     };
-
-    // Use ResizeObserver instead of window.resize
-    // This catches layout changes (like sidebar toggle) AND window resize
     const observer = new ResizeObserver(updatePosition);
     observer.observe(containerRef.current);
-
-    // Initial calculation
-    updatePosition();
-
     return () => observer.disconnect();
   }, [containerRef]);
 
-  // --- DRAG HANDLER (Visual Update) ---
-  const handleDrag = (e, data) => {
-    setPosition({ x: data.x, y: data.y });
-  };
-
-  // --- STOP HANDLER (Save Logic) ---
   const handleStop = (e, data) => {
     if (!containerRef.current) return;
-
-    const containerRect = containerRef.current.getBoundingClientRect();
+    const { width, height } = containerRef.current.getBoundingClientRect();
     
-    // Calculate Percentage based on current PDF container size
-    let xPercent = data.x / containerRect.width;
-    let yPercent = data.y / containerRect.height;
+    // Calculate Percentages
+    let xPercent = data.x / width;
+    let yPercent = data.y / height;
 
-    // Safety Clamp (0.0 - 1.0) to ensure it never saves outside bounds
+    // Clamp 0-1
     xPercent = Math.max(0, Math.min(xPercent, 1));
     yPercent = Math.max(0, Math.min(yPercent, 1));
 
-    // Update the Ref so resize knows where to put it
     percentsRef.current = { x: xPercent, y: yPercent };
-
-    console.log(`[Drop] X: ${(xPercent*100).toFixed(2)}%, Y: ${(yPercent*100).toFixed(2)}%`);
-
+    
     if (onPositionChange) {
       onPositionChange({ x: xPercent, y: yPercent });
     }
   };
 
+  const handleDrag = (e, data) => {
+    setPosition({ x: data.x, y: data.y });
+  };
+
   return (
     <Draggable
       nodeRef={nodeRef}
-      bounds="parent" // Keeps it inside the PDF wrapper
+      bounds="parent"
       position={position} 
       onDrag={handleDrag}
       onStop={handleStop}
     >
       <div 
         ref={nodeRef}
-        className="draggable-signature-box"
+        style={{
+            /* INLINE STYLES TO ENSURE VISIBILITY & PLACEMENT */
+            width: '150px',
+            height: '60px',
+            position: 'absolute',
+            zIndex: 1000, /* Always on top */
+            top: 0,
+            left: 0,
+            cursor: 'grab',
+            border: '2px dashed #2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.15)',
+            color: '#2563eb',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        }}
       >
         <span>✋ Sign Here</span>
       </div>

@@ -56,7 +56,7 @@
   /* --- PDF Wrapper --- */
   /* This is crucial for coordinate mapping */
   .pdf-wrapper {
-    position: relative; 
+    position: relative !important; 
     width: 100%;
     border-radius: 8px;
     /* Shadow for the paper look */
